@@ -9,7 +9,7 @@ import { Heading, Body, Caption } from '@/components/Text';
 import { Field } from '@/components/Field';
 import { Button } from '@/components/Button';
 import { LoadingState, EmptyState } from '@/components/DataStates';
-import { colors, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { communityApi } from '@/api/endpoints';
 import { apiMessage, collectionFrom, recordValue } from '@/utils/apiValue';
@@ -21,18 +21,24 @@ export default function SpaceScreen() {
   const { spaceId } = useLocalSearchParams<{ spaceId: string }>();
   const { token } = useAuth();
   const [posts, setPosts] = useState<unknown[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState('');
   const { control, handleSubmit, reset, formState: { errors } } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { content: '' } });
   const load = useCallback(async () => {
     if (!token || !spaceId) return;
-    setLoading(true); setError('');
     try { const response = await communityApi.posts(spaceId); setPosts(collectionFrom(response.data)); }
     catch (e) { setError(apiMessage(e)); }
     finally { setLoading(false); }
   }, [token, spaceId]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!token || !spaceId) return;
+    let active = true;
+    communityApi.posts(spaceId).then((response) => { if (active) setPosts(collectionFrom(response.data)); })
+      .catch((e) => { if (active) setError(apiMessage(e)); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token, spaceId]);
 
   const submit = handleSubmit(async ({ content }) => {
     setPosting(true);

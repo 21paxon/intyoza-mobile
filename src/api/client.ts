@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { create } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 export const API_BASE_URL =
@@ -18,7 +18,7 @@ export const tokenStorage = {
   clear: () => SecureStore.deleteItemAsync(tokenKey),
 };
 
-export const apiClient = axios.create({
+export const apiClient = create({
   baseURL: API_BASE_URL,
   timeout: 20000,
   headers: { Accept: 'application/json', 'Content-Type': 'application/json' },

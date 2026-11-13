@@ -9,7 +9,7 @@ import { Heading, Body, Caption } from '@/components/Text';
 import { Field } from '@/components/Field';
 import { Button } from '@/components/Button';
 import { LoadingState, EmptyState } from '@/components/DataStates';
-import { colors, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { referralsApi } from '@/api/endpoints';
 import { apiMessage, collectionFrom } from '@/utils/apiValue';
@@ -20,18 +20,24 @@ type Values = z.infer<typeof schema>;
 export default function SupportScreen() {
   const { token } = useAuth();
   const [requests, setRequests] = useState<unknown[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const { control, handleSubmit, reset, formState: { errors } } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { contactMethod: '', topic: '' } });
   const load = useCallback(async () => {
     if (!token) return;
-    setLoading(true); setError('');
     try { const response = await referralsApi.mine(); setRequests(collectionFrom(response.data)); }
     catch (e) { setError(apiMessage(e)); }
     finally { setLoading(false); }
   }, [token]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    referralsApi.mine().then((response) => { if (active) setRequests(collectionFrom(response.data)); })
+      .catch((e) => { if (active) setError(apiMessage(e)); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token]);
   const submit = handleSubmit(async ({ contactMethod, topic }) => {
     setSending(true);
     try { await referralsApi.create(contactMethod, topic); reset(); Alert.alert('Request sent', 'A health professional will follow up using the contact method you provided.'); await load(); }

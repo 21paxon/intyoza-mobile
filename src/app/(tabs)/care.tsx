@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Screen, Surface } from '@/components/Screen';
 import { Heading, Body, Caption } from '@/components/Text';
 import { Field } from '@/components/Field';
@@ -17,18 +17,23 @@ export default function CareScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const load = useCallback(async (districtFilter?: string) => {
-    setLoading(true); setError('');
     try { const response = await facilitiesApi.list(districtFilter ? { district: districtFilter } : undefined); setFacilities(response.data.facilities ?? []); }
     catch (e) { setError(apiMessage(e)); }
     finally { setLoading(false); }
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    facilitiesApi.list().then((response) => { if (active) setFacilities(response.data.facilities ?? []); })
+      .catch((e) => { if (active) setError(apiMessage(e)); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
   const visible = facilities.filter((item) => `${item.name} ${item.district} ${item.sector} ${item.services.map((service) => service.serviceName).join(' ')}`.toLowerCase().includes(query.toLowerCase()));
 
   return (
     <Screen>
       <View style={styles.intro}><Caption>HEALTH CONNECT</Caption><Heading>Care that meets you where you are</Heading><Body>Browse local services. Contact details are shown when they are available in the backend.</Body></View>
-      <Surface style={styles.search}><Field label="District" placeholder="e.g. Gasabo" value={district} onChangeText={setDistrict} /><Button title="Search district" onPress={() => load(district.trim())} loading={loading} secondary /><Field label="Filter results" placeholder="Name, area or service" value={query} onChangeText={setQuery} /></Surface>
+      <Surface style={styles.search}><Field label="District" placeholder="e.g. Gasabo" value={district} onChangeText={setDistrict} /><Button title="Search district" onPress={() => { setLoading(true); setError(''); void load(district.trim()); }} loading={loading} secondary /><Field label="Filter results" placeholder="Name, area or service" value={query} onChangeText={setQuery} /></Surface>
       {loading ? <LoadingState label="Finding nearby facilities…" /> : error ? <EmptyState title="Could not load facilities" detail={error} /> : visible.length === 0 ? <EmptyState title="No matching facilities" detail="Try changing your search." /> : <Caption>{visible.length} health facilities</Caption>}
       {visible.map((facility) => <Surface key={facility.id} style={styles.card}>
         <View style={styles.cardHead}><View style={styles.dot} /><Caption>{facility.facilityType}</Caption></View>

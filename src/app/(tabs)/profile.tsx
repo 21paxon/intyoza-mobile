@@ -20,18 +20,27 @@ type Values = z.infer<typeof schema>;
 export default function ProfileScreen() {
   const { token, loading: authLoading, signOut } = useAuth();
   const [profile, setProfile] = useState<unknown>();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const { control, handleSubmit, reset } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { alias: '', ageBand: '', gender: '', district: '', language: 'EN' } });
 
   const loadProfile = useCallback(async () => {
-    setLoading(true); setError('');
     try { const response = await authApi.me(); setProfile(response.data); const value = recordValue(response.data); if (value) reset({ alias: String(value.alias ?? ''), ageBand: String(value.ageBand ?? ''), gender: String(value.gender ?? ''), district: String(value.district ?? ''), language: value.language === 'RW' ? 'RW' : 'EN' }); }
     catch (e) { setError(apiMessage(e)); }
     finally { setLoading(false); }
   }, [reset]);
-  useEffect(() => { if (token) loadProfile(); }, [token, loadProfile]);
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    authApi.me().then((response) => {
+      if (!active) return;
+      setProfile(response.data);
+      const value = recordValue(response.data);
+      if (value) reset({ alias: String(value.alias ?? ''), ageBand: String(value.ageBand ?? ''), gender: String(value.gender ?? ''), district: String(value.district ?? ''), language: value.language === 'RW' ? 'RW' : 'EN' });
+    }).catch((e) => { if (active) setError(apiMessage(e)); }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token, reset]);
 
   const save = handleSubmit(async (values) => {
     setSaving(true);

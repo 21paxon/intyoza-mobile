@@ -39,7 +39,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "android:export": "expo export --platform android"
+    "android:export": "expo export --platform android",
+    "lint": "eslint ."
   },
   "private": true
 }

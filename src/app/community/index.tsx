@@ -13,16 +13,22 @@ import { apiMessage, collectionFrom, recordValue } from '@/utils/apiValue';
 export default function CommunityScreen() {
   const { token } = useAuth();
   const [spaces, setSpaces] = useState<unknown[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const load = useCallback(async () => {
     if (!token) return;
-    setLoading(true); setError('');
     try { const response = await communityApi.spaces(); setSpaces(collectionFrom(response.data)); }
     catch (e) { setError(apiMessage(e)); }
     finally { setLoading(false); }
   }, [token]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    communityApi.spaces().then((response) => { if (active) setSpaces(collectionFrom(response.data)); })
+      .catch((e) => { if (active) setError(apiMessage(e)); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token]);
 
   if (!token) return <Screen><View style={styles.intro}><Caption>COMMUNITY</Caption><Heading>Good conversations start here</Heading><Body>Sign in to explore community spaces and take part in peer support.</Body></View><Surface style={styles.card}><Button title="Sign in to continue" onPress={() => router.push('/(auth)/login')} /><Button title="Create an account" onPress={() => router.push('/(auth)/register')} secondary /></Surface></Screen>;
 

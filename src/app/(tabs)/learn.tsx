@@ -15,7 +15,6 @@ export default function LearnScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const load = useCallback(async () => {
-    setLoading(true); setError('');
     try {
       const [categoryResponse, articleResponse] = await Promise.all([learningApi.categories(), learningApi.articles({ categoryId, language: 'EN' })]);
       setCategories(categoryResponse.data.categories ?? []);
@@ -23,13 +22,22 @@ export default function LearnScreen() {
     } catch (e) { setError(apiMessage(e)); }
     finally { setLoading(false); }
   }, [categoryId]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    Promise.all([learningApi.categories(), learningApi.articles({ categoryId, language: 'EN' })])
+      .then(([categoryResponse, articleResponse]) => {
+        if (active) { setCategories(categoryResponse.data.categories ?? []); setArticles(articleResponse.data.articles ?? []); }
+      })
+      .catch((e) => { if (active) setError(apiMessage(e)); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [categoryId]);
   return (
     <Screen>
       <View style={styles.intro}><Caption>LEARNING HUB</Caption><Heading>Learn at your own pace</Heading><Body>Explore clear, practical information created for young people.</Body></View>
       <View style={styles.filters}>
-        <Filter label="All topics" selected={!categoryId} onPress={() => setCategoryId(undefined)} />
-        {categories.map((category) => <Filter key={category.id} label={category.nameEn} selected={category.id === categoryId} onPress={() => setCategoryId(category.id)} />)}
+        <Filter label="All topics" selected={!categoryId} onPress={() => { if (categoryId) { setLoading(true); setError(''); setCategoryId(undefined); } }} />
+        {categories.map((category) => <Filter key={category.id} label={category.nameEn} selected={category.id === categoryId} onPress={() => { if (category.id !== categoryId) { setLoading(true); setError(''); setCategoryId(category.id); } }} />)}
       </View>
       {loading ? <LoadingState label="Finding learning resources…" /> : error ? <EmptyState title="Could not load learning" detail={error} /> : articles.length === 0 ? <EmptyState title="No articles yet" detail="Try another topic or check back later." /> : articles.map((article) => (
         <Surface key={article.id} style={styles.article}>
