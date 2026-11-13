@@ -28,7 +28,7 @@ export default function HomeScreen() {
       <View style={styles.grid}>
         <Feature href="/(tabs)/care" icon="⌖" title="Find care" detail="Youth-friendly services near you" tone={colors.mint} />
         <Feature href="/(tabs)/ask" icon="✳" title="Ask privately" detail="Chat with the SRH assistant" tone="#F7EED9" />
-        <Feature href="/(tabs)/myths" icon="✦" title="Myth Buster" detail="Separate facts from myths" tone="#E9EAF6" />
+        <Feature href="/myths" icon="✦" title="Myth Buster" detail="Separate facts from myths" tone="#E9EAF6" />
         <Feature href="/community" icon="◌" title="Community" detail="Learn alongside your peers" tone="#F5E4E0" />
         <Feature href="/support" icon="♡" title="Talk to someone" detail="Request a professional callback" tone="#E9EAF6" />
       </View>
@@ -41,7 +41,7 @@ export default function HomeScreen() {
   );
 }
 
-function Feature({ href, icon, title, detail, tone }: { href: '/(tabs)/care' | '/(tabs)/ask' | '/(tabs)/myths' | '/community' | '/support'; icon: string; title: string; detail: string; tone: string }) {
+function Feature({ href, icon, title, detail, tone }: { href: '/(tabs)/care' | '/(tabs)/ask' | '/myths' | '/community' | '/support'; icon: string; title: string; detail: string; tone: string }) {
   return <Link href={href} asChild><Pressable style={({ pressed }) => [styles.feature, pressed && { opacity: 0.8 }]}><View style={[styles.featureIcon, { backgroundColor: tone }]}><Body style={styles.iconText}>{icon}</Body></View><Body style={styles.featureTitle}>{title}</Body><Caption>{detail}</Caption></Pressable></Link>;
 }
 

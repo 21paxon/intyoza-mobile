@@ -19,7 +19,6 @@ export default function TabLayout() {
       <Tabs.Screen name="care" options={{ title: 'Find care', tabBarIcon: tabIcon('location-outline') }} />
       <Tabs.Screen name="ask" options={{ title: 'Ask', tabBarIcon: tabIcon('chatbubble-ellipses-outline') }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: tabIcon('person-outline') }} />
-      <Tabs.Screen name="myths" options={{ href: null }} />
     </Tabs>
   );
 }

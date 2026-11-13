@@ -18,6 +18,7 @@ export default function RootLayout() {
         <Stack.Screen name="community/[spaceId]" options={{ title: 'Community space' }} />
         <Stack.Screen name="community/report" options={{ title: 'Report a post' }} />
         <Stack.Screen name="support" options={{ title: 'Professional support' }} />
+        <Stack.Screen name="myths" options={{ title: 'Myth Buster' }} />
       </Stack>
     </AuthProvider>
   );

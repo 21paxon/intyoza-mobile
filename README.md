@@ -38,7 +38,7 @@ Authentication tokens are stored with Expo SecureStore and attached as bearer to
 - Email registration and login
 - Profile retrieval and updates
 - Learning categories and article listings
-- Myth Buster content
+- English and Kinyarwanda learning and Myth Buster content
 - Health facility search and local filtering
 - Guest AI chat
 - Authenticated community spaces, posts, and user reports
