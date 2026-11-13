@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, router } from 'expo-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
@@ -25,11 +25,6 @@ export default function ProfileScreen() {
   const [error, setError] = useState('');
   const { control, handleSubmit, reset } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { alias: '', ageBand: '', gender: '', district: '', language: 'EN' } });
 
-  const loadProfile = useCallback(async () => {
-    try { const response = await authApi.me(); setProfile(response.data); const value = recordValue(response.data); if (value) reset({ alias: String(value.alias ?? ''), ageBand: String(value.ageBand ?? ''), gender: String(value.gender ?? ''), district: String(value.district ?? ''), language: value.language === 'RW' ? 'RW' : 'EN' }); }
-    catch (e) { setError(apiMessage(e)); }
-    finally { setLoading(false); }
-  }, [reset]);
   useEffect(() => {
     if (!token) return;
     let active = true;

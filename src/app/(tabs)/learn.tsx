@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Screen, Surface } from '@/components/Screen';
 import { Heading, Body, Caption } from '@/components/Text';
@@ -14,14 +14,6 @@ export default function LearnScreen() {
   const [categoryId, setCategoryId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const load = useCallback(async () => {
-    try {
-      const [categoryResponse, articleResponse] = await Promise.all([learningApi.categories(), learningApi.articles({ categoryId, language: 'EN' })]);
-      setCategories(categoryResponse.data.categories ?? []);
-      setArticles(articleResponse.data.articles ?? []);
-    } catch (e) { setError(apiMessage(e)); }
-    finally { setLoading(false); }
-  }, [categoryId]);
   useEffect(() => {
     let active = true;
     Promise.all([learningApi.categories(), learningApi.articles({ categoryId, language: 'EN' })])

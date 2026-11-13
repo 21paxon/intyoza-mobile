@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Screen, Surface } from '@/components/Screen';
@@ -15,12 +15,6 @@ export default function CommunityScreen() {
   const [spaces, setSpaces] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const load = useCallback(async () => {
-    if (!token) return;
-    try { const response = await communityApi.spaces(); setSpaces(collectionFrom(response.data)); }
-    catch (e) { setError(apiMessage(e)); }
-    finally { setLoading(false); }
-  }, [token]);
   useEffect(() => {
     if (!token) return;
     let active = true;
