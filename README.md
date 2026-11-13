@@ -1,3 +1,4 @@
+
 # Intyoza Mobile
 
 React Native app built with Expo Router and TypeScript. It connects to the existing Intyoza API and includes regular-user functionality only.
@@ -31,7 +32,9 @@ npm run typecheck
 
 The app defaults to `https://intyoza-backend.onrender.com`. To use another API base URL, copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_BASE_URL`. This value is public app configuration; do not put secrets in it.
 
-Authentication tokens are stored with Expo SecureStore and attached as bearer tokens. A `401` clears the local session. Logout clears the local session because the documented API has no logout endpoint.
+On Android and iOS, authentication tokens are stored with Expo SecureStore and attached as bearer tokens. On web, the token stays in memory for the current page session because SecureStore is a native-only module. A `401` clears the local session. Logout clears the local session because the documented API has no logout endpoint.
+
+To run on Android, install Android Studio and an Android SDK, create/start an emulator, and set `ANDROID_HOME` to the SDK directory with the SDK `platform-tools` directory on `PATH` so `adb` is available. Then run `npm run android`.
 
 ## Included regular-user features
 

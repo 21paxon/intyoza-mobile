@@ -1,4 +1,5 @@
 import { create } from 'axios';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 export const API_BASE_URL =
@@ -7,15 +8,22 @@ export const API_BASE_URL =
 
 const tokenKey = 'intyoza.auth.token';
 let unauthorizedHandler: (() => void) | undefined;
+let webToken: string | null = null;
 
 export const setUnauthorizedHandler = (handler?: () => void) => {
   unauthorizedHandler = handler;
 };
 
 export const tokenStorage = {
-  get: () => SecureStore.getItemAsync(tokenKey),
-  set: (token: string) => SecureStore.setItemAsync(tokenKey, token),
-  clear: () => SecureStore.deleteItemAsync(tokenKey),
+  get: async () => Platform.OS === 'web' ? webToken : SecureStore.getItemAsync(tokenKey),
+  set: async (token: string) => {
+    if (Platform.OS === 'web') { webToken = token; return; }
+    await SecureStore.setItemAsync(tokenKey, token);
+  },
+  clear: async () => {
+    if (Platform.OS === 'web') { webToken = null; return; }
+    await SecureStore.deleteItemAsync(tokenKey);
+  },
 };
 
 export const apiClient = create({
