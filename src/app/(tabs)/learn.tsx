@@ -12,30 +12,35 @@ export default function LearnScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [categoryId, setCategoryId] = useState<string | undefined>();
+  const [language, setLanguage] = useState<'EN' | 'RW'>('EN');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
-    Promise.all([learningApi.categories(), learningApi.articles({ categoryId, language: 'EN' })])
+    Promise.all([learningApi.categories(), learningApi.articles({ categoryId, language })])
       .then(([categoryResponse, articleResponse]) => {
         if (active) { setCategories(categoryResponse.data.categories ?? []); setArticles(articleResponse.data.articles ?? []); }
       })
       .catch((e) => { if (active) setError(apiMessage(e)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [categoryId]);
+  }, [categoryId, language]);
   return (
     <Screen>
       <View style={styles.intro}><Caption>LEARNING HUB</Caption><Heading>Learn at your own pace</Heading><Body>Explore clear, practical information created for young people.</Body></View>
       <View style={styles.filters}>
+        <Filter label="English" selected={language === 'EN'} onPress={() => { if (language !== 'EN') { setLoading(true); setError(''); setLanguage('EN'); } }} />
+        <Filter label="Kinyarwanda" selected={language === 'RW'} onPress={() => { if (language !== 'RW') { setLoading(true); setError(''); setLanguage('RW'); } }} />
+      </View>
+      <View style={styles.filters}>
         <Filter label="All topics" selected={!categoryId} onPress={() => { if (categoryId) { setLoading(true); setError(''); setCategoryId(undefined); } }} />
-        {categories.map((category) => <Filter key={category.id} label={category.nameEn} selected={category.id === categoryId} onPress={() => { if (category.id !== categoryId) { setLoading(true); setError(''); setCategoryId(category.id); } }} />)}
+        {categories.map((category) => <Filter key={category.id} label={language === 'RW' ? category.nameRw || category.nameEn : category.nameEn} selected={category.id === categoryId} onPress={() => { if (category.id !== categoryId) { setLoading(true); setError(''); setCategoryId(category.id); } }} />)}
       </View>
       {loading ? <LoadingState label="Finding learning resources…" /> : error ? <EmptyState title="Could not load learning" detail={error} /> : articles.length === 0 ? <EmptyState title="No articles yet" detail="Try another topic or check back later." /> : articles.map((article) => (
         <Surface key={article.id} style={styles.article}>
           <View style={styles.badges}><Caption style={styles.badge}>{article.format.replaceAll('_', ' ')}</Caption>{article.isLowData ? <Caption style={styles.badge}>LOW DATA</Caption> : null}</View>
           <Heading style={styles.articleTitle}>{article.title}</Heading>
-          <Body style={styles.articleCopy}>This resource is available in {article.language === 'RW' ? 'Kinyarwanda' : 'English'}.</Body>
+          <Body style={styles.articleCopy}>{article.language === 'RW' ? 'Iki gitabo kiboneka mu Kinyarwanda.' : 'This resource is available in English.'}</Body>
         </Surface>
       ))}
       <Caption style={styles.note}>The learning API currently returns article summaries only; full article content is not available through its documented routes.</Caption>
