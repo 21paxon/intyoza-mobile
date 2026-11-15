@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import { Body, Caption, Heading } from '@/components/Text';
 import { colors, spacing } from '@/constants/theme';
 import { chatApi } from '@/api/endpoints';
@@ -31,7 +32,29 @@ export default function AskScreen() {
   const [draft, setDraft] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
+  const voiceDraftBase = useRef('');
   const threadRef = useRef<ScrollViewInstance>(null);
+
+  useSpeechRecognitionEvent('start', () => setListening(true));
+  useSpeechRecognitionEvent('end', () => setListening(false));
+  useSpeechRecognitionEvent('result', (event) => {
+    const transcript = event.results[0]?.transcript?.trim();
+    if (!transcript) return;
+    const existingText = voiceDraftBase.current;
+    setDraft(existingText ? `${existingText} ${transcript}` : transcript);
+  });
+  useSpeechRecognitionEvent('error', (event) => {
+    setListening(false);
+    if (event.error === 'aborted') return;
+
+    const message = event.error === 'no-speech' || event.error === 'speech-timeout'
+      ? 'We didn’t hear any speech. Tap the microphone and try again.'
+      : event.error === 'not-allowed'
+        ? 'Allow microphone and speech recognition access in your device settings to use voice input.'
+        : 'Voice input is unavailable right now. Check your device’s speech recognition settings and try again.';
+    Alert.alert('Voice input unavailable', message);
+  });
 
   const sendMessage = async (value: string) => {
     const message = value.trim();
@@ -51,7 +74,11 @@ export default function AskScreen() {
           : 'I could not prepare a response. Please try again.';
       setTurns((current) => [...current, { role: 'intyoza', value: reply }]);
     } catch (error) {
-      Alert.alert('Message not sent', apiMessage(error));
+      const code = (error as { code?: string } | null)?.code;
+      const messageError = code === 'ECONNABORTED' || code === 'ETIMEDOUT'
+        ? 'Intyoza is taking longer than usual to respond. Please try again.'
+        : apiMessage(error);
+      Alert.alert('Message not sent', messageError);
       setDraft(message);
     } finally {
       setLoading(false);
@@ -59,6 +86,33 @@ export default function AskScreen() {
   };
 
   const sendDraft = () => sendMessage(draft);
+
+  const toggleVoiceInput = async () => {
+    if (listening) {
+      ExpoSpeechRecognitionModule.stop();
+      return;
+    }
+    if (loading) return;
+
+    try {
+      if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
+        Alert.alert('Voice input unavailable', 'Speech recognition is not available on this device.');
+        return;
+      }
+
+      const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Microphone access needed', 'Allow microphone and speech recognition access to dictate a question.');
+        return;
+      }
+
+      voiceDraftBase.current = draft.trim();
+      ExpoSpeechRecognitionModule.start({ interimResults: true, continuous: false, maxAlternatives: 1 });
+    } catch {
+      setListening(false);
+      Alert.alert('Voice input unavailable', 'Could not start speech recognition. Please try again.');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
@@ -170,7 +224,7 @@ export default function AskScreen() {
                 onChangeText={setDraft}
                 multiline
                 maxLength={2000}
-                editable={!loading}
+                editable={!loading && !listening}
                 style={styles.input}
                 textAlignVertical="center"
                 returnKeyType="send"
@@ -178,12 +232,24 @@ export default function AskScreen() {
               />
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel={listening ? 'Stop voice input' : 'Start voice input'}
+                disabled={loading}
+                onPress={toggleVoiceInput}
+                style={({ pressed }) => [
+                  styles.voiceButton,
+                  listening && styles.voiceButtonActive,
+                  pressed && styles.pressed,
+                ]}>
+                <Ionicons name={listening ? 'stop' : 'mic'} size={19} color={listening ? colors.white : colors.forest} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Send message"
-                disabled={!draft.trim() || loading}
+                disabled={!draft.trim() || loading || listening}
                 onPress={sendDraft}
                 style={({ pressed }) => [
                   styles.sendButton,
-                  (!draft.trim() || loading) && styles.sendButtonDisabled,
+                  (!draft.trim() || loading || listening) && styles.sendButtonDisabled,
                   pressed && styles.pressed,
                 ]}>
                 {loading ? (
@@ -194,10 +260,10 @@ export default function AskScreen() {
               </Pressable>
             </View>
             <View style={styles.composerFooter}>
-              <Ionicons name="lock-closed-outline" size={12} color={colors.muted} />
-              <Caption style={styles.footerText}>Your conversation is private</Caption>
-              <View style={styles.footerDot} />
-              <Caption style={styles.footerText}>Up to 2,000 characters</Caption>
+              <Ionicons name={listening ? 'radio' : 'mic-outline'} size={12} color={listening ? colors.coral : colors.muted} />
+              <Caption style={[styles.footerText, listening && styles.listeningText]}>
+                {listening ? 'Listening… tap the mic when you’re done' : 'Voice is transcribed by your device’s speech service'}
+              </Caption>
             </View>
           </View>
         </View>
@@ -248,10 +314,12 @@ const styles = StyleSheet.create({
   composerArea: { paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.line },
   composer: { minHeight: 54, flexDirection: 'row', alignItems: 'flex-end', gap: 8, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white, paddingLeft: 15, paddingRight: 6, paddingVertical: 6 },
   input: { flex: 1, maxHeight: 112, minHeight: 40, paddingTop: 9, paddingBottom: 9, color: colors.ink, fontSize: 15, lineHeight: 21 },
+  voiceButton: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.mint },
+  voiceButtonActive: { backgroundColor: colors.coral },
   sendButton: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.forest },
   sendButtonDisabled: { backgroundColor: '#9BB5AA' },
   pressed: { opacity: 0.75 },
   composerFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingTop: 8 },
   footerText: { color: colors.muted, fontSize: 10, lineHeight: 14 },
-  footerDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.muted, marginHorizontal: 2 },
+  listeningText: { color: colors.coral },
 });

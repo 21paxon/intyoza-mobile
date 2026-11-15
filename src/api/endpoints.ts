@@ -35,7 +35,7 @@ export const facilitiesApi = {
 
 export const chatApi = {
   send: (message: string, sessionId?: string, suggestion?: string) =>
-    apiClient.post(`${api}/ai/chat`, { message, sessionId, suggestion }),
+    apiClient.post(`${api}/ai/chat`, { message, sessionId, suggestion }, { timeout: 90000 }),
 };
 
 export const communityApi = {

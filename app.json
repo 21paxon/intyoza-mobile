@@ -41,7 +41,14 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Intyoza to use your microphone for voice questions.",
+          "speechRecognitionPermission": "Allow Intyoza to turn your spoken questions into text."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
